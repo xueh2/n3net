@@ -7,6 +7,7 @@ Please see the file LICENSE.txt for the license governing this code.
 '''
 
 import os
+import numpy as np
 import PIL.Image as Image
 
 import torch.utils.data as data
@@ -24,7 +25,9 @@ def is_image_file(filename):
         bool: True if the filename ends with a known image extension
     """
     filename_lower = filename.lower()
-    return any(filename_lower.endswith(ext) for ext in IMG_EXTENSIONS)
+    IMG_EXTENSIONS_all = list(IMG_EXTENSIONS)
+    IMG_EXTENSIONS_all.append('.npy')
+    return any(filename_lower.endswith(ext) for ext in tuple(IMG_EXTENSIONS_all))
 
 class ToGrayscale(object):
     def __call__(self, img):
@@ -85,7 +88,18 @@ class PlainImageFolder(data.Dataset):
         """
         path = self.imgs[index]
         if not index in self.img_cache:
-            img = self.loader(path)
+            if(path.find('npy')>=0):
+                try:
+                    img = np.load(path)
+                except:
+                    print("Loading failed for ", path)
+
+                img = img / np.max(img)
+                #img = img / np.median(img)
+
+                img = Image.fromarray(img, mode='F')
+            else:
+                img = self.loader(path)
             if self.cache:
                 self.img_cache[index] = img
         else:

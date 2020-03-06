@@ -7,7 +7,9 @@ Please see the file LICENSE.txt for the license governing this code.
 '''
 
 import os
+import numpy as np
 
+from tqdm import tqdm
 import tensorboardX as tbx
 import torch
 import torchvision.transforms as transforms
@@ -67,29 +69,52 @@ class Experiment:
             transforms.RandomCrop(patchsize),
             preprocess.RandomOrientation90(),
             transforms.RandomVerticalFlip(),
-            img_dataset.ToGrayscale(),
+            #img_dataset.ToGrayscale(),
             transforms.ToTensor(),
         ])
         self.batchsize=batchsize
 
         train_folders = [
-            denoising_data.bsds500_train_dir,
-            denoising_data.bsds500_test_dir
+            #denoising_data.bsds500_train_dir,
+            #denoising_data.bsds500_test_dir
+            #denoising_data.cmr_cine_train_dir
+            denoising_data.cmr_perf_train_dir
         ]
 
-        trainset = img_dataset.PlainImageFolder(root=train_folders, transform=transform_train, cache=True)
-        trainset = torch.utils.data.ConcatDataset([trainset]*trainsetiters)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=batchsize,
+        trainset = img_dataset.PlainImageFolder(root=train_folders, transform=transform_train, cache=True, depth=2)
+        print('Input traing data has ', len(trainset))
+
+        trainset_multiple = [trainset]*trainsetiters
+        print(trainset_multiple)
+
+        trainset_used = torch.utils.data.ConcatDataset(trainset_multiple)
+        print('Total amount of images for training ', len(trainset_used))
+
+        # try to load all data
+        for n in tqdm(range(len(trainset_used))):
+            try:
+                img = trainset_used[n]
+            except:
+                print("Error in loading sample ", n)
+
+        trainloader = torch.utils.data.DataLoader(trainset_used, batch_size=batchsize,
                                                   shuffle=True, num_workers=20)
 
         return trainloader
 
     def data_preprocessing(self, input):
-        args = self.args
-        sigma = args.sigma / 255.0
+        args = self.args        
         noise = torch.zeros_like(input)
         noise.normal_(0, 1)
-        noise *= sigma
+        B = input.shape[0]
+        sigmas = np.random.randint(2, args.sigma, B)
+        for b in range(B):
+            sigma = sigmas[b] / 255.0
+            max_input = torch.mean(input[b, :,:,:])
+            #sigma_used = np.random.uniform(0.25*sigma, sigma, 1)
+            #noise *= sigma_used[0]
+            noise[b, :,:,:] *= (sigma*max_input)
+
         noisy = input + noise
         return noisy, input
 
@@ -123,7 +148,7 @@ class Experiment:
     def learning_rate_decay(self, epoch):
         if epoch > 50:
             return 0
-        decay = 10**(-3.0*epoch/50.0)
+        decay = 10**(-1.0*epoch/50.0)
         return decay
 
     def experiment_dir(self):
@@ -184,5 +209,7 @@ class Experiment:
         if args.resume:
             self.summaries, self.epoch = utils.load_checkpoint(self.net, self.optimizer, self.expdir, withoptimizer=args.resume_for_train, resume_epoch=args.resumeepoch)
 
-        if self.use_cuda:
+        if self.use_cuda:            
+            if torch.cuda.device_count() > 1:
+                self.net = torch.nn.DataParallel(self.net)
             self.net.cuda()

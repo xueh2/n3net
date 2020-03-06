@@ -11,7 +11,7 @@ import functools
 import os
 import pickle
 import sys
-
+import copy
 import torch
 
 ### Directories ###
@@ -197,6 +197,10 @@ def load_checkpoint(net, optimizer, expdir, withoptimizer=True, resume_epoch=-1)
         print("Loading {}".format(os.path.join(checkpoint_dir, filename)))
         checkpoint = torch.load(os.path.join(checkpoint_dir, filename))
         net.load_state_dict(checkpoint["net"])
+        if torch.cuda.device_count() > 1:
+            net = torch.nn.DataParallel(net)
+            net.cuda()
+
         if withoptimizer:
             optimizer.load_state_dict(checkpoint["optim"])
         try:
@@ -207,7 +211,13 @@ def load_checkpoint(net, optimizer, expdir, withoptimizer=True, resume_epoch=-1)
     return summaries, epoch
 
 def save_checkpoint(experiment):
-    net = experiment.net
+    net = copy.deepcopy(experiment.net)
+
+    try:
+        best_model_cpu = net.cpu().module
+    except:    
+        best_model_cpu = net.cpu()
+
     optimizer = experiment.optimizer
     summaries = experiment.summaries
     expdir = experiment.expdir
@@ -215,7 +225,7 @@ def save_checkpoint(experiment):
     # Save checkpoint.
     print('Saving..')
     state = {
-        'net': net.state_dict(),
+        'net': best_model_cpu.state_dict(),
         'optim' : optimizer.state_dict(),
         'epoch': epoch,
         'summaries': summaries
