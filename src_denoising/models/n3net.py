@@ -10,10 +10,7 @@ import math
 
 import torch.nn as nn
 
-try:
-    from .non_local import *
-except:
-    from non_local import *
+from . import non_local
 
 def convnxn(in_planes, out_planes, kernelsize, stride=1, bias=False):
     padding = kernelsize//2
