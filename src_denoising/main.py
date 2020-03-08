@@ -23,20 +23,24 @@ import metrics
 from progressbar import progress_bar
 import utils
 
-base_expdir = "/home/xueh2/mrprogs/n3net_2/results_gaussian_denoising_perfusion/"
+#base_expdir = "/home/xueh2/mrprogs/n3net_2/results_gaussian_denoising_perfusion/"
+#dump_dir = '/mnt/Lab-Kellman/RawData/MachinLearning_Labelled_data/denoising/perf_training_record'
+
+base_expdir = "/mnt/Lab-Kellman/RawData/MachinLearning_Labelled_data/denoising/results_gaussian_denoising_cine_rtcine/"
+dump_dir = '/mnt/Lab-Kellman/RawData/MachinLearning_Labelled_data/denoising/cine_rtcine_training_record'
 
 parser = argparse.ArgumentParser(description='N3Net for Gaussian image denoising')
 
 parser.add_argument("--sigma", type=float, default=25) # standard deviation of input noise
 
 # DnCNN
-utils.add_commandline_networkparams(parser, "dncnn", 64, 6, 3, "relu", True) # Specification of DnCNNs: features, depth, kernelsize, activation, batchnorm
-parser.add_argument("--nfeatures_interm", type=int, default=16) # output channels of intermediate DnCNNs
+utils.add_commandline_networkparams(parser, "dncnn", 64, 4, 3, "relu", True) # Specification of DnCNNs: features, depth, kernelsize, activation, batchnorm
+parser.add_argument("--nfeatures_interm", type=int, default=8) # output channels of intermediate DnCNNs
 parser.add_argument("--ndncnn", type=int, default=4) # number of DnCNN networks
 
 # Nonlocal block
-utils.add_commandline_networkparams(parser, "embedcnn", 64, 6, 3, "relu", True) # Specification of embedding CNNs: features, depth, kernelsize, activation, batchnorm
-parser.add_argument("--embedcnn.nplanes_out", type=int, default=16) # output channels of embedding CNNs
+utils.add_commandline_networkparams(parser, "embedcnn", 64, 4, 3, "relu", True) # Specification of embedding CNNs: features, depth, kernelsize, activation, batchnorm
+parser.add_argument("--embedcnn.nplanes_out", type=int, default=8) # output channels of embedding CNNs
 parser.add_argument("--nl_k", type=int, default=11) # number of neighborhood volumes
 # stride and patchsize for extracting patches in non-local block
 parser.add_argument("--nl_patchsize", type=int, default=20)
@@ -247,7 +251,7 @@ def train_epoch(experiment):
             #    print("{}: {:.4f}, ".format(stat.name, stat.avg), end='')
             #print("")
 
-            dump_dir = '/mnt/Lab-Kellman/RawData/MachinLearning_Labelled_data/denoising/perf_training_record'
+            #dump_dir = '/mnt/Lab-Kellman/RawData/MachinLearning_Labelled_data/denoising/perf_training_record'
             fname = 'inputs_epoch_%d__batch_%d.npy' % (epoch, batch_idx)
             np.save(os.path.join(dump_dir, fname), inputs.detach().cpu().numpy())
             fname = 'targets_epoch_%d__batch_%d.npy' % (epoch, batch_idx)

@@ -236,6 +236,9 @@ def save_checkpoint(experiment):
     filename = '%03d_ckpt.t7' % (epoch)
     torch.save(state, os.path.join(checkpoint_dir, filename))
 
+    filename = '%03d_model.pbt' % (epoch)
+    torch.save(best_model_cpu.state_dict(), os.path.join(checkpoint_dir, filename))
+
 # Adapted from https://github.com/pytorch/examples/blob/master/imagenet/main.py
 class AverageMeter(object):
     """Computes and stores the average and current value"""

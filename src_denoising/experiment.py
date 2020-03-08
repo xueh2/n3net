@@ -77,8 +77,9 @@ class Experiment:
         train_folders = [
             #denoising_data.bsds500_train_dir,
             #denoising_data.bsds500_test_dir
-            #denoising_data.cmr_cine_train_dir
-            denoising_data.cmr_perf_train_dir
+            denoising_data.cmr_cine_train_dir,
+            denoising_data.cmr_rt_cine_train_dir
+            #enoising_data.cmr_perf_train_dir
         ]
 
         trainset = img_dataset.PlainImageFolder(root=train_folders, transform=transform_train, cache=True, depth=2)
@@ -107,15 +108,24 @@ class Experiment:
         noise = torch.zeros_like(input)
         noise.normal_(0, 1)
         B = input.shape[0]
-        sigmas = np.random.randint(2, args.sigma, B)
+        #sigmas = np.random.randint(2, args.sigma, B)
+        #sigmas = np.random.randint(0.9*args.sigma, args.sigma, B)
+        #for b in range(B):
+        #    sigma = sigmas[b] / 255.0
+        #    max_input = torch.mean(input[b, :,:,:])
+        #    noise[b, :,:,:] *= (sigma*max_input)
+
+        sigmas = np.random.randint(0.9*args.sigma, args.sigma, B)
         for b in range(B):
-            sigma = sigmas[b] / 255.0
-            max_input = torch.mean(input[b, :,:,:])
-            #sigma_used = np.random.uniform(0.25*sigma, sigma, 1)
-            #noise *= sigma_used[0]
-            noise[b, :,:,:] *= (sigma*max_input)
+            sigma = sigmas[b]
+            noise[b, :,:,:] *= sigma
+            # scale noise std to be 1.0    
 
         noisy = input + noise
+        for b in range(B):
+            sigma = sigmas[b]
+            noisy[b, :,:,:] /= np.sqrt(1.0 + sigma*sigma)
+
         return noisy, input
 
     def create_loss(self):
@@ -148,7 +158,7 @@ class Experiment:
     def learning_rate_decay(self, epoch):
         if epoch > 50:
             return 0
-        decay = 10**(-1.0*epoch/50.0)
+        decay = 10**(-2.0*epoch/50.0)
         return decay
 
     def experiment_dir(self):

@@ -94,8 +94,9 @@ class PlainImageFolder(data.Dataset):
                 except:
                     print("Loading failed for ", path)
 
-                img = img / np.max(img)
+                #img = img / np.max(img)
                 #img = img / np.median(img)
+                img = img / 10.0 # scale to have noise std 1.0
 
                 img = Image.fromarray(img, mode='F')
             else:

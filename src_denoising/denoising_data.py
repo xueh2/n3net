@@ -30,3 +30,4 @@ waterloo_train_dir = "/home/xueh2/mrprogs/n3net_2/datasets/Waterloo/exploration_
 cmr_base_dir = '/home/xueh2/mrprogs/n3net_2/datasets/'
 cmr_cine_train_dir = os.path.join(cmr_base_dir, "CMR/cine_small_set")
 cmr_perf_train_dir = os.path.join(cmr_base_dir, "CMR/perf_small_set")
+cmr_rt_cine_train_dir = os.path.join(cmr_base_dir, "CMR/rt_cine_small_set")
